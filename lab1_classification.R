@@ -62,6 +62,8 @@ predictSurvival <- function(data){
 }
 
 
+
+
 women <- c()
 
 for (i in 1:1000){
@@ -79,6 +81,73 @@ names(results) <- c("Coin","All Perish","Women")
 boxplot(results)
 
 
+
+df <- titanicData[,c("Survived","Age")]
+df$Survived <- factor(df$Survived,levels=c(0,1),labels=c("No","Yes"))
+#df <- df[-which(is.na(df$Age)),]
+#c(sum(df$Age<18,na.rm = TRUE),sum(df$Age>=18,na.rm = TRUE))
+df$Adult=df$Age>=18
+
+
+index <- sample(1:dim(df)[1] *.75,replace=FALSE)
+training <- df[index,]
+testing <- df[-index,]
+
+table(training$Survived,training$Adult)
+
+
+
+predictSurvivalAge <- function(data){
+  model <- rep("No",dim(data)[1])
+  model[data$Age>=18] <- "No"
+  return(model)
+}
+
+age <- c()
+
+for(i in 1:1000)
+{
+  index <- sample(1:dim(df)[1],dim(df)[1] * .75,replace=FALSE)
+  testing <- df[-index,]
+  
+  ageModel <- predictSurvivalAge(testing)
+  
+  age[i] <- mean(ageModel==testing$Survived)
+
+}
+
+results$'Age Accuracy' <- age
+names(results) <- c("Coin", "All Perish", "Women","Age")
+
+boxplot(results)
+
+
+df <- titanicData[,c("Survived","Pclass")]
+df$Survived <- factor(df$Survived,levels=c(0,1),labels=c("No","Yes"))
+
+df$class1<- df$Pclass == 1
+df$class2<- df$Pclass == 2
+df$class3<- df$Pclass == 3
+
+
+predictSurvivalClass <- function(data,class){
+  model <- rep("No",dim(data)[1])
+  model[data$class] <- "No"
+  return(model)
+}
+
+class1st <- c()
+
+for(i in 1:1000)
+{
+  index <- sample(1:dim(df)[1],dim(df)[1] * .75,replace=FALSE)
+  testing <- df[-index,]
+  
+  class1stModel <- predictSurvivalAge(testing)
+  
+  class1st[i] <- mean(ageModel==testing$Survived)
+  
+}
 
 
 

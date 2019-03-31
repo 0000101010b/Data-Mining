@@ -29,7 +29,7 @@ wr$stars <- factor(wr$stars)
 library(dplyr)
 
 #######################################
-#comment to test on smaller set of data
+#uncomment to test on smaller set of data
 #######################################
 wr <- wr %>% filter(usaf!="999999") 
 

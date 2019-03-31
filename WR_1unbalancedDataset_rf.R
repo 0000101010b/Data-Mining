@@ -28,9 +28,9 @@ wr$stars <- factor(wr$stars)
 
 library(dplyr)
 
-#################################
-#uncomment to test 
-#################################
+#######################################
+#comment to test on smaller set of data
+#######################################
 wr <- wr %>% filter(usaf!="999999") 
 
 library(caret)

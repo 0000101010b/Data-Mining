@@ -99,6 +99,11 @@ df <- df[,-c(grep("Over18",colnames(df)),grep("EmployeeCount",colnames(df)))] #E
 #mising values:
 sapply(df,function(x) sum(is.na(x)))
 
+
+sum(is.na(df))
+#df <- na.omit(df)
+
+
 #outliers
 boxplot(subset(df, select=c(1,6,18,20,21:24))) #nothing too obvious here
 boxplot(subset(df, select=c(26:29))) #May be something in years at company
@@ -411,10 +416,15 @@ library(glmnet)
 
 #we'll try a lasso logit and see how we get on
 
-train_c <- df[sample, ] #build the training categoricals 
+df_c <- df[,c(names(Filter(is.factor, df)))]
+df_n <-  df[,  -which(names(df) %in% c(names(Filter(is.factor, df))))]
+
+train_c <- df_c[sample, ] #build the training categoricals 
 trainFactors <- model.matrix(Attrition ~., data = train_c ) #flattens the categoricals
 head(trainFactors) #we could if we wanted to go back to the knn question and use this now if we chose to
 
+
+train_n <- df_n[sample, ]
 glmTraining <- as.matrix(data.frame(train_n, trainFactors))
 head(glmTraining)
 
@@ -470,21 +480,21 @@ library(class)
 
 normalize <- function(x) { return ((x - min(x)) / (max(x) - min(x))) }
 #now let's normalise our dataset so that calculating the distances in the feature space makes sense
-df_n <- subset(df, select=c(1,4,6,10,16:19,23,24,26:29)) #get the numerical for normalisation -- kNN also doesn't support levelled factors either
-df_n <- as.data.frame(lapply(df_n, normalize)) #normalise
-summary(df_n) #all our numericals are normalised, our categoricals are untouched
+#df_n <- subset(df, select=c(1,4,6,10,16:19,23,24,26:29)) #get the numerical for normalisation -- kNN also doesn't support levelled factors either
+df_nn <- as.data.frame(lapply(df_n, normalize)) #normalise
+summary(df_nn) #all our numericals are normalised, our categoricals are untouched
 
 #re make train and test note we can retain the original distribution if we choose to
-train_n <- df_n[sample, ]
-test_n <- df_n[-sample, ]
+train_nn <- df_nn[sample, ]
+test_nn <- df_nn[-sample, ]
 
-df_c <- subset(df, select=c(2,3,5,7:9,11:15,20:22,25)) #isolate the categoricals
-df_k <- cbind(df_n, df_c) #put them back together 
+#df_c <- subset(df, select=c(2,3,5,7:9,11:15,20:22,25)) #isolate the categoricals
+df_k <- cbind(df_nn, df_c) #put them back together 
 
 kmeansClusters <- list()
 kmeansScores <- c()
 for (i in 2:10) {
-  clusters <- kmeans(df_n, i)
+  clusters <- kmeans(df_nn, i)
   name <- paste0("kmeans", i)
   kmeansClusters[[name]] <- clusters
   kmeansScores <- rbind(kmeansScores, sum(clusters$withinss))
@@ -500,9 +510,9 @@ plot(kmeansScores, xlab="k", ylab="within groups sum of squares")
 library(clusterSim)
 kmeansScores <- c()
 for (i in 2:10) {
-  clusters <- kmeans(df_n, i)
+  clusters <- kmeans(df_nn, i)
   name <- paste0("kmeans", i)
-  dbindex <- index.DB(df_n, clusters$cluster, centrotypes="centroids")
+  dbindex <- index.DB(df_nn, clusters$cluster, centrotypes="centroids")
   kmeansScores <- rbind(kmeansScores, dbindex$DB)
 }
 
@@ -514,10 +524,11 @@ plot(kmeansScores, xlab="k", ylab="DBIndex")
 
 #let's try plotting
 library(fpc)
-plotcluster(df_n, kmeansClusters[["kmeans2"]]$cluster)
-plotcluster(df_n, kmeansClusters[["kmeans4"]]$cluster)
-plotcluster(df_n, kmeansClusters[["kmeans5"]]$cluster)
-plotcluster(df_n, kmeansClusters[["kmeans10"]]$cluster)
+plotcluster(df_nn, kmeansClusters[["kmeans2"]]$cluster)
+plotcluster(df_nn, kmeansClusters[["kmeans4"]]$cluster)
+plotcluster(df_nn, kmeansClusters[["kmeans5"]]$cluster)
+plotcluster(df_nn, kmeansClusters[["kmeans6"]]$cluster)
+plotcluster(df_nn, kmeansClusters[["kmeans10"]]$cluster)
 
 #for interest (going beyond what's asked, but it's good to think about this a little) let's use the whole dataset -- we need to switch to medoids because of the categorical variables
 library(cluster)
@@ -595,13 +606,13 @@ library(class)
 
 normalize <- function(x) { return ((x - min(x)) / (max(x) - min(x))) }
 #now let's normalise our dataset so that calculating the distances in the feature space makes sense
-df_n <- subset(df, select=c(1,4,6,10,16:19,23,24,26:29)) #get the numerical for normalisation -- kNN also doesn't support levelled factors either
-df_n <- as.data.frame(lapply(df_n, normalize)) #normalise
-summary(df_n) #all our numericals are normalised, our categoricals are untouched
+#df_n <- subset(df, select=c(1,4,6,10,16:19,23,24,26:29)) #get the numerical for normalisation -- kNN also doesn't support levelled factors either
+#df_n <- as.data.frame(lapply(df_n, normalize)) #normalise
+summary(df_nn) #all our numericals are normalised, our categoricals are untouched
 
 #re make train and test note we can retain the original distribution if we choose to
-train_n <- df_n[sample, ]
-test_n <- df_n[-sample, ]
+train_nn <- df_nn[sample, ]
+test_nn <- df_nn[-sample, ]
 
 #different ways to determine k
 k1 <- round(sqrt(dim(train_n)[1])) #sqrt of number of instances
@@ -620,9 +631,9 @@ knn1Acc - accuracyB1 #same as benchmark
 knn2Acc - accuracyB1 #worse then benchmark
 knn3Acc - accuracyB1 #same as benchmark
 
-dim(df_n)
-df_c <- subset(df, select=c(2,3,5,7:9,11:15,20:22,25)) #isolate the categoricals
-df_n <- cbind(df_n, df_c) #put them back together if you want to include the categoricals in a later question
+dim(df_nn)
+#df_c <- subset(df, select=c(2,3,5,7:9,11:15,20:22,25)) #isolate the categoricals
+#df_n <- cbind(df_n, df_c) #put them back together if you want to include the categoricals in a later question
 #don't run this line if you are going to do A1! PCA will break.
 
 #End of Question
@@ -810,7 +821,7 @@ df <- df_old
 ##########################################
 
 #Start of Question: A1
-pcs <- prcomp( ~ ., data=df_n) #PCA on categoricals is hard, so let's stick to the numerical attributes
+pcs <- prcomp( ~ ., data=df_nn) #PCA on categoricals is hard, so let's stick to the numerical attributes
 #conveniently, for k-means (I4) and kNN (I2) we normalised the numerical data -- happy days :)
 #had we not, prcomp will do this for us using scale=T
 plot(pcs, type="l")
@@ -1114,7 +1125,7 @@ results.glm.2 <- ifelse(preds2 > 0.5,1,0)
 #Start of Question: A5
 
 #well i'm lazy, we did PCA already in A1, so let's just reuse that :)
-pcs <- prcomp(~ ., data=df_n)
+pcs <- prcomp(~ ., data=df_nn)
 plot(pcs, type="l")
 
 #let's continue with the first 2 pcs idea and redo the c50

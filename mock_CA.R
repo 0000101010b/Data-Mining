@@ -271,6 +271,11 @@ female <- df %>% filter(Gender == "Female")
 boxplot(male$MonthlyIncome~male$Education)
 boxplot(female$MonthlyIncome~female$Education)
 
+library(ggplot2)
+ggplot(df, aes(factor(df$Education), df$MonthlyIncome, fill = df$Gender)) + 
+  geom_bar(stat="identity", position = "dodge") + 
+  scale_fill_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 #End of Question
